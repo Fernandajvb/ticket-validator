@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Validador de Tickets</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  min-height: 100vh;
+  background: #0a0a0f;
+  font-family: 'DM Sans', sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  position: relative;
+  overflow: hidden;
+}
+body::before {
+  content: '';
+  position: absolute;
+  width: 600px; height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%);
+  top: -150px; left: 50%; transform: translateX(-50%);
+  pointer-events: none;
+}
+.badge {
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 3px;
+  color: #6366f1;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+h1 {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 300;
+  font-size: 42px;
+  color: #f1f0ff;
+  margin-bottom: 8px;
+  text-align: center;
+}
+.sub {
+  font-size: 16px;
+  color: #555570;
+  margin-bottom: 48px;
+  text-align: center;
+}
+.input-row {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  max-width: 520px;
+  margin-bottom: 20px;
+}
+input {
+  flex: 1;
+  background: #13131f;
+  border: 1px solid #2a2a40;
+  border-radius: 10px;
+  padding: 16px 20px;
+  font-family: 'Space Mono', monospace;
+  font-size: 16px;
+  color: #e0e0ff;
+  outline: none;
+  transition: border-color 0.2s;
+  letter-spacing: 1px;
+}
+input:focus { border-color: #6366f1; }
+input::placeholder { color: #333350; letter-spacing: 0; font-family: 'DM Sans', sans-serif; font-size: 15px; }
+button.validate-btn {
+  background: #6366f1;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 16px 28px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  white-space: nowrap;
+}
+button.validate-btn:hover { background: #4f52d8; }
+button.validate-btn:active { transform: scale(0.97); }
+button.validate-btn:disabled { background: #2a2a40; color: #555; cursor: not-allowed; }
+.quick-btns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.qbtn {
+  background: transparent;
+  border: 1px solid #2a2a40;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  color: #555570;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.qbtn:hover { border-color: #6366f1; color: #9999ff; }
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(5,5,15,0.85);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+}
+.overlay.open { display: flex; }
+.modal {
+  background: #13131f;
+  border: 1px solid #2a2a40;
+  border-radius: 20px;
+  padding: 40px;
+  width: 100%;
+  max-width: 480px;
+  margin: 20px;
+  position: relative;
+}
+.modal-status { display: flex; align-items: center; gap: 14px; margin-bottom: 30px; }
+.status-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
+.status-dot.ok { background: #22c55e; box-shadow: 0 0 12px rgba(34,197,94,0.6); }
+.status-dot.fail { background: #ef4444; box-shadow: 0 0 12px rgba(239,68,68,0.6); }
+.status-text { font-size: 26px; font-weight: 500; color: #f1f0ff; }
+.status-text.ok { color: #4ade80; }
+.status-text.fail { color: #f87171; }
+.modal-close {
+  position: absolute; top: 20px; right: 20px;
+  background: transparent; border: none;
+  color: #555570; font-size: 22px; cursor: pointer;
+  padding: 4px 10px; border-radius: 6px; transition: color 0.15s;
+}
+.modal-close:hover { color: #f1f0ff; }
+.info-grid { display: grid; gap: 14px; }
+.info-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 18px; background: #0a0a0f;
+  border-radius: 10px; border: 1px solid #1e1e30;
+}
+.info-label { font-size: 12px; color: #555570; text-transform: uppercase; letter-spacing: 1.5px; font-family: 'Space Mono', monospace; }
+.info-value { font-family: 'Space Mono', monospace; font-size: 15px; color: #e0e0ff; text-align: right; max-width: 55%; word-break: break-all; }
+
+/* REPLICA BADGE - más grande y prominente */
+.replica-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: #1a1a3a;
+  border: 2px solid #6366f1;
+  border-radius: 16px;
+  padding: 18px 24px;
+  margin-top: 24px;
+  width: 100%;
+}
+.replica-dot {
+  width: 10px; height: 10px;
+  background: #6366f1;
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(99,102,241,0.8);
+  animation: pulse 1.5s ease-in-out infinite;
+  flex-shrink: 0;
+}
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+.replica-label {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: #7777bb;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+.replica-port {
+  font-family: 'Space Mono', monospace;
+  font-size: 28px;
+  font-weight: 700;
+  color: #a5b4fc;
+  letter-spacing: 2px;
+}
+
+.error-msg { font-size: 14px; color: #f87171; text-align: center; margin-top: 10px; min-height: 20px; }
+</style>
+</head>
+<body>
+<div class="badge">▸ Sistema de Validación</div>
+<h1>Validador de Tickets</h1>
+<p class="sub">Concierto Coldplay · Acceso en tiempo real</p>
+<div class="input-row">
+  <input id="ticketInput" type="text" placeholder="Ingresa tu ticket ID..." maxlength="20"/>
+  <button class="validate-btn" id="validateBtn" onclick="validateTicket()">Validar</button>
+</div>
+<div class="quick-btns">
+  <button class="qbtn" onclick="setTicket('TK-001')">TK-001</button>
+  <button class="qbtn" onclick="setTicket('TK-002')">TK-002</button>
+  <button class="qbtn" onclick="setTicket('TK-003')">TK-003</button>
+  <button class="qbtn" onclick="setTicket('TK-999')">TK-999 (inválido)</button>
+</div>
+<div class="error-msg" id="errorMsg"></div>
+
+<div class="overlay" id="overlay" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <button class="modal-close" onclick="closeOverlay()">✕</button>
+    <div class="modal-status">
+      <div class="status-dot" id="statusDot"></div>
+      <div class="status-text" id="statusText"></div>
+    </div>
+    <div class="info-grid" id="infoGrid"></div>
+    <div class="replica-badge">
+      <div class="replica-dot"></div>
+      <div>
+        <div class="replica-label">Réplica activa</div>
+        <div class="replica-port" id="replicaPort">—</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function setTicket(id) {
+  document.getElementById('ticketInput').value = id;
+  document.getElementById('errorMsg').textContent = '';
+}
+async function validateTicket() {
+  const id = document.getElementById('ticketInput').value.trim();
+  const btn = document.getElementById('validateBtn');
+  const errorMsg = document.getElementById('errorMsg');
+  if (!id) { errorMsg.textContent = 'Ingresa un ticket ID primero.'; return; }
+  errorMsg.textContent = '';
+  btn.disabled = true;
+  btn.textContent = 'Validando...';
+  try {
+    const res = await fetch('/validar?ticket_id=' + encodeURIComponent(id));
+    const data = await res.json();
+    showModal(data);
+  } catch(e) {
+    errorMsg.textContent = 'No se pudo conectar al servidor.';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Validar';
+  }
+}
+function showModal(data) {
+  const aprobado = data.status === 'aprobado';
+  document.getElementById('statusDot').className = 'status-dot ' + (aprobado ? 'ok' : 'fail');
+  const text = document.getElementById('statusText');
+  text.className = 'status-text ' + (aprobado ? 'ok' : 'fail');
+  text.textContent = aprobado ? '✓ Ticket aprobado' : '✗ ' + (data.status === 'rechazado' ? 'Ticket rechazado' : 'No encontrado');
+  const rows = [];
+  if (data.ticket_id) rows.push(['Ticket ID', data.ticket_id]);
+  if (data.detalle?.evento) rows.push(['Evento', data.detalle.evento]);
+  if (data.detalle?.zona) rows.push(['Zona', data.detalle.zona]);
+  if (data.detalle?.estado) rows.push(['Estado', data.detalle.estado]);
+  if (data.mensaje) rows.push(['Mensaje', data.mensaje]);
+  document.getElementById('infoGrid').innerHTML = rows.map(([l,v]) =>
+    `<div class="info-row"><span class="info-label">${l}</span><span class="info-value">${v}</span></div>`
+  ).join('');
+  document.getElementById('replicaPort').textContent = 'Puerto ' + data.replica;
+  document.getElementById('overlay').classList.add('open');
+}
+function closeModal(e) { if (e.target === document.getElementById('overlay')) closeOverlay(); }
+function closeOverlay() { document.getElementById('overlay').classList.remove('open'); }
+document.getElementById('ticketInput').addEventListener('keydown', e => { if(e.key==='Enter') validateTicket(); });
+</script>
+</body>
+</html>
